@@ -1,0 +1,7 @@
+version: '3.4'
+
+services:
+
+  conexia-challenge-service:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker

@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+
+  sql-server:
+    image: "mcr.microsoft.com/mssql/server"
+    container_name: sql-server
+    environment:
+        SA_PASSWORD: "Resident@3"
+        ACCEPT_EULA: "Y"
+    volumes:
+      - docker-volume:/var/opt/mssql
+    ports:
+      - "5434:1433"
+    networks:
+      - docker-network
+
+  authentication-service:
+    build:
+      context: ../../AuthenticationService
+      dockerfile: src/AuthenticationService/Dockerfile
+    container_name: AuthenticationService
+    ports:
+      - '5000:80'
+    networks:
+      - docker-network
+    depends_on:
+      - sql-server
+    healthcheck:
+      test: 'curl -s http://localhost:5000/api/health >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  authentication-app:
+    build:
+      context: ../../AuthenticationApp
+      dockerfile: Dockerfile
+    container_name: AuthenticationApp
+    volumes:
+      - docker-volume:/app
+      - docker-volume:/app/node_modules
+    ports:
+      - '8080:80'
+    networks:
+      - docker-network
+    depends_on:
+      - authentication-service
+
+networks:
+  docker-network:
+    driver: bridge
+
+volumes:
+  docker-volume:
+    driver: local
